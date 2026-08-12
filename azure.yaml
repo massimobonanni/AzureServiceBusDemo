@@ -6,3 +6,9 @@ infra:
   path: ./infra
   module: main
 
+services:
+  finance:
+    project: ./src/Finance
+    language: csharp
+    host: function
+

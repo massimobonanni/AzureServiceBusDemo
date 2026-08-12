@@ -1,0 +1,425 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.46.1.21595",
+      "templateHash": "6077167276158867128"
+    }
+  },
+  "parameters": {
+    "environmentName": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "Stable name of the AZD deployment environment."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Primary Azure region for this deployment."
+      }
+    }
+  },
+  "variables": {
+    "$fxv#0": {
+      "resourceGroup": "rg",
+      "serviceBusNamespace": "sb",
+      "serviceBusTopic": "sbt",
+      "serviceBusSubscription": "sbs"
+    },
+    "resourceToken": "[uniqueString(subscription().id, parameters('environmentName'))]",
+    "abbreviations": "[variables('$fxv#0')]",
+    "resourceGroupName": "[take(format('{0}-{1}', parameters('environmentName'), variables('abbreviations').resourceGroup), 50)]",
+    "serviceBusName": "[take(format('{0}-{1}', variables('abbreviations').serviceBusNamespace, variables('resourceToken')), 50)]",
+    "financeFunctionAppName": "[take(format('func-finance-{0}', variables('resourceToken')), 60)]",
+    "financeFunctionStorageName": "[take(format('stfinance{0}', variables('resourceToken')), 24)]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('resourceGroupName')]",
+      "location": "[parameters('location')]"
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "servicebus",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "serviceBusName": {
+            "value": "[variables('serviceBusName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "11253699434414556833"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "serviceBusName": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ServiceBus/namespaces",
+              "apiVersion": "2024-01-01",
+              "name": "[parameters('serviceBusName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Standard",
+                "tier": "Standard"
+              }
+            },
+            {
+              "type": "Microsoft.ServiceBus/namespaces/topics",
+              "apiVersion": "2024-01-01",
+              "name": "[format('{0}/{1}', parameters('serviceBusName'), 'OrdersTopic')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.ServiceBus/namespaces', parameters('serviceBusName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ServiceBus/namespaces/topics/subscriptions",
+              "apiVersion": "2024-01-01",
+              "name": "[format('{0}/{1}/{2}', parameters('serviceBusName'), 'OrdersTopic', 'LogisticSubscription')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.ServiceBus/namespaces/topics', parameters('serviceBusName'), 'OrdersTopic')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ServiceBus/namespaces/topics/subscriptions",
+              "apiVersion": "2024-01-01",
+              "name": "[format('{0}/{1}/{2}', parameters('serviceBusName'), 'OrdersTopic', 'FinanceSubscription')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.ServiceBus/namespaces/topics', parameters('serviceBusName'), 'OrdersTopic')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ServiceBus/namespaces/topics/authorizationRules",
+              "apiVersion": "2024-01-01",
+              "name": "[format('{0}/{1}/{2}', parameters('serviceBusName'), 'OrdersTopic', 'publisher')]",
+              "properties": {
+                "rights": [
+                  "Send"
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ServiceBus/namespaces/topics', parameters('serviceBusName'), 'OrdersTopic')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ServiceBus/namespaces/topics/authorizationRules",
+              "apiVersion": "2024-01-01",
+              "name": "[format('{0}/{1}/{2}', parameters('serviceBusName'), 'OrdersTopic', 'receiver')]",
+              "properties": {
+                "rights": [
+                  "Listen"
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ServiceBus/namespaces/topics', parameters('serviceBusName'), 'OrdersTopic')]"
+              ]
+            }
+          ],
+          "outputs": {
+            "serviceBusFullyQualifiedNamespace": {
+              "type": "string",
+              "value": "[format('{0}.servicebus.windows.net', parameters('serviceBusName'))]"
+            },
+            "serviceBusTopicName": {
+              "type": "string",
+              "value": "OrdersTopic"
+            },
+            "logisticSubscriptionName": {
+              "type": "string",
+              "value": "LogisticSubscription"
+            },
+            "financeSubscriptionName": {
+              "type": "string",
+              "value": "FinanceSubscription"
+            },
+            "serviceBusTopicConnectionString": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/topics/authorizationRules', parameters('serviceBusName'), 'OrdersTopic', 'publisher'), '2024-01-01').primaryConnectionString]"
+            },
+            "logisticSubscriptionConnectionString": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/topics/authorizationRules', parameters('serviceBusName'), 'OrdersTopic', 'receiver'), '2024-01-01').primaryConnectionString]"
+            },
+            "financeSubscriptionConnectionString": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/topics/authorizationRules', parameters('serviceBusName'), 'OrdersTopic', 'receiver'), '2024-01-01').primaryConnectionString]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "finance-functionapp",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "functionAppName": {
+            "value": "[variables('financeFunctionAppName')]"
+          },
+          "storageAccountName": {
+            "value": "[variables('financeFunctionStorageName')]"
+          },
+          "serviceBusConnection": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'servicebus'), '2025-04-01').outputs.financeSubscriptionConnectionString.value]"
+          },
+          "serviceBusTopicName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'servicebus'), '2025-04-01').outputs.serviceBusTopicName.value]"
+          },
+          "serviceBusSubscriptionName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'servicebus'), '2025-04-01').outputs.financeSubscriptionName.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "14073210172858604351"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "functionAppName": {
+              "type": "string",
+              "minLength": 3
+            },
+            "storageAccountName": {
+              "type": "string",
+              "minLength": 3
+            },
+            "serviceBusConnection": {
+              "type": "string"
+            },
+            "serviceBusTopicName": {
+              "type": "string"
+            },
+            "serviceBusSubscriptionName": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "deploymentContainerName": "function-releases",
+            "applicationInsightsName": "[format('{0}-insights', parameters('functionAppName'))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('storageAccountName')]",
+              "location": "[parameters('location')]",
+              "kind": "StorageV2",
+              "sku": {
+                "name": "Standard_LRS"
+              },
+              "properties": {
+                "allowBlobPublicAccess": false,
+                "minimumTlsVersion": "TLS1_2"
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2023-05-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2023-05-01",
+              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', variables('deploymentContainerName'))]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/serverfarms",
+              "apiVersion": "2024-11-01",
+              "name": "[format('{0}-plan', parameters('functionAppName'))]",
+              "location": "[parameters('location')]",
+              "kind": "functionapp,linux",
+              "sku": {
+                "name": "FC1",
+                "tier": "FlexConsumption"
+              },
+              "properties": {
+                "reserved": true
+              }
+            },
+            {
+              "type": "Microsoft.Insights/components",
+              "apiVersion": "2020-02-02",
+              "name": "[variables('applicationInsightsName')]",
+              "location": "[parameters('location')]",
+              "kind": "web",
+              "properties": {
+                "Application_Type": "web",
+                "DisableIpMasking": false
+              }
+            },
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2024-11-01",
+              "name": "[parameters('functionAppName')]",
+              "location": "[parameters('location')]",
+              "kind": "functionapp,linux",
+              "tags": {
+                "azd-service-name": "finance"
+              },
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', format('{0}-plan', parameters('functionAppName')))]",
+                "httpsOnly": true,
+                "functionAppConfig": {
+                  "deployment": {
+                    "storage": {
+                      "type": "blobContainer",
+                      "value": "[format('{0}{1}', reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-05-01').primaryEndpoints.blob, variables('deploymentContainerName'))]",
+                      "authentication": {
+                        "type": "SystemAssignedIdentity"
+                      }
+                    }
+                  },
+                  "runtime": {
+                    "name": "dotnet-isolated",
+                    "version": "10.0"
+                  },
+                  "scaleAndConcurrency": {
+                    "maximumInstanceCount": 100,
+                    "instanceMemoryMB": 2048
+                  }
+                },
+                "siteConfig": {
+                  "appSettings": [
+                    {
+                      "name": "FUNCTIONS_EXTENSION_VERSION",
+                      "value": "~4"
+                    },
+                    {
+                      "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                      "value": "[reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsName')), '2020-02-02').ConnectionString]"
+                    },
+                    {
+                      "name": "ServiceBusConnection",
+                      "value": "[parameters('serviceBusConnection')]"
+                    },
+                    {
+                      "name": "ServiceBusTopicName",
+                      "value": "[parameters('serviceBusTopicName')]"
+                    },
+                    {
+                      "name": "ServiceBusSubscriptionName",
+                      "value": "[parameters('serviceBusSubscriptionName')]"
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]",
+                "[resourceId('Microsoft.Web/serverfarms', format('{0}-plan', parameters('functionAppName')))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+              "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), resourceId('Microsoft.Web/sites', parameters('functionAppName')), 'Storage Blob Data Contributor')]",
+              "properties": {
+                "principalId": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2024-11-01', 'full').identity.principalId]",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'servicebus')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "SERVICEBUS_FULLYQUALIFIEDNAMESPACE": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'servicebus'), '2025-04-01').outputs.serviceBusFullyQualifiedNamespace.value]"
+    },
+    "SERVICEBUS_TOPICNAME": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'servicebus'), '2025-04-01').outputs.serviceBusTopicName.value]"
+    },
+    "SERVICEBUS_LOGISTICSUBSCRIPTIONNAME": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'servicebus'), '2025-04-01').outputs.logisticSubscriptionName.value]"
+    },
+    "SERVICEBUS_FINANCESUBSCRIPTIONNAME": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'servicebus'), '2025-04-01').outputs.financeSubscriptionName.value]"
+    },
+    "SERVICEBUS_TOPIC_CONNECTION_STRING": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'servicebus'), '2025-04-01').outputs.serviceBusTopicConnectionString.value]"
+    },
+    "SERVICEBUS_LOGISTIC_SUBSCRIPTION_CONNECTION_STRING": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'servicebus'), '2025-04-01').outputs.logisticSubscriptionConnectionString.value]"
+    },
+    "SERVICEBUS_FINANCE_SUBSCRIPTION_CONNECTION_STRING": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'servicebus'), '2025-04-01').outputs.financeSubscriptionConnectionString.value]"
+    }
+  }
+}

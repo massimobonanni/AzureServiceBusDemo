@@ -11,6 +11,8 @@ var resourceToken = uniqueString(subscription().id, environmentName)
 var abbreviations = loadJsonContent('abbreviations.json')
 var resourceGroupName = take('${environmentName}-${abbreviations.resourceGroup}', 50)
 var serviceBusName = take('${abbreviations.serviceBusNamespace}-${resourceToken}', 50)
+var financeFunctionAppName = take('func-finance-${resourceToken}', 60)
+var financeFunctionStorageName = take('stfinance${resourceToken}', 24)
 
 resource deploymentResourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: resourceGroupName
@@ -23,6 +25,19 @@ module serviceBus 'modules/servicebus.bicep' = {
   params: {
     location: location
     serviceBusName: serviceBusName
+  }
+}
+
+module financeFunctionApp 'modules/functionapp.bicep' = {
+  name: 'finance-functionapp'
+  scope: deploymentResourceGroup
+  params: {
+    location: location
+    functionAppName: financeFunctionAppName
+    storageAccountName: financeFunctionStorageName
+    serviceBusConnection: serviceBus.outputs.financeSubscriptionConnectionString
+    serviceBusTopicName: serviceBus.outputs.serviceBusTopicName
+    serviceBusSubscriptionName: serviceBus.outputs.financeSubscriptionName
   }
 }
 
