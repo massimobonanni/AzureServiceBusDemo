@@ -409,6 +409,9 @@ FodyWeavers.xsd
 
 # VS Code files for those working on multiple tools
 .vscode/*
+
+# Azure Developer CLI
+.azure/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
