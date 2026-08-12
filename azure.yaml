@@ -1,7 +1,7 @@
 name: azureservicebusdemo
 metadata:
   template: azd-init@1.18.2
-services:
-  app:
-    project: ./src/AzureServiceBusDemo
-    host: containerapp
+infra:
+  provider: bicep
+  path: ./infra
+  module: main

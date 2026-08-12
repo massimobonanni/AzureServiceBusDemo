@@ -1,0 +1,6 @@
+{
+  "resourceGroup": "rg",
+  "serviceBusNamespace": "sb",
+  "serviceBusTopic": "sbt",
+  "serviceBusSubscription": "sbs"
+}
