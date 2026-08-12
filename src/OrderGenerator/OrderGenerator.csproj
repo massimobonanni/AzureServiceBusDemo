@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CommonLib\CommonLib.csproj" />
+    <ProjectReference Include="..\UILib\UILib.csproj" />
   </ItemGroup>
 
   <ItemGroup>
