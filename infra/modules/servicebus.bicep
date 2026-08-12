@@ -35,18 +35,8 @@ resource topicPublisherPolicy 'Microsoft.ServiceBus/namespaces/topics/authorizat
   }
 }
 
-resource logisticReceiverPolicy 'Microsoft.ServiceBus/namespaces/topics/subscriptions/authorizationRules@2024-01-01' = {
-  parent: logisticSubscription
-  name: 'receiver'
-  properties: {
-    rights: [
-      'Listen'
-    ]
-  }
-}
-
-resource financeReceiverPolicy 'Microsoft.ServiceBus/namespaces/topics/subscriptions/authorizationRules@2024-01-01' = {
-  parent: financeSubscription
+resource topicReceiverPolicy 'Microsoft.ServiceBus/namespaces/topics/authorizationRules@2024-01-01' = {
+  parent: ordersTopic
   name: 'receiver'
   properties: {
     rights: [
@@ -62,6 +52,6 @@ output financeSubscriptionName string = financeSubscription.name
 @secure()
 output serviceBusTopicConnectionString string = topicPublisherPolicy.listKeys().primaryConnectionString
 @secure()
-output logisticSubscriptionConnectionString string = logisticReceiverPolicy.listKeys().primaryConnectionString
+output logisticSubscriptionConnectionString string = replace(topicReceiverPolicy.listKeys().primaryConnectionString, 'EntityPath=OrdersTopic', 'EntityPath=OrdersTopic/LogisticSubscription')
 @secure()
-output financeSubscriptionConnectionString string = financeReceiverPolicy.listKeys().primaryConnectionString
+output financeSubscriptionConnectionString string = replace(topicReceiverPolicy.listKeys().primaryConnectionString, 'EntityPath=OrdersTopic', 'EntityPath=OrdersTopic/FinanceSubscription')
