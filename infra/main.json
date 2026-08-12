@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.46.1.21595",
-      "templateHash": "6077167276158867128"
+      "templateHash": "16613190975590908180"
     }
   },
   "parameters": {
@@ -215,7 +215,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.46.1.21595",
-              "templateHash": "14073210172858604351"
+              "templateHash": "14908887885831915437"
             }
           },
           "parameters": {
@@ -342,6 +342,10 @@
                     {
                       "name": "FUNCTIONS_EXTENSION_VERSION",
                       "value": "~4"
+                    },
+                    {
+                      "name": "AzureWebJobsStorage",
+                      "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', parameters('storageAccountName'), listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-05-01').keys[0].value)]"
                     },
                     {
                       "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
