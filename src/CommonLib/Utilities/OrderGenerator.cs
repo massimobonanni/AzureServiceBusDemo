@@ -8,6 +8,8 @@ namespace CommonLib.Utilities
     /// </summary>
     public static class OrderGenerator
     {
+        private static int _nextId = 1;
+
         /// <summary>
         /// Generates a collection of fake orders.
         /// </summary>
@@ -15,10 +17,15 @@ namespace CommonLib.Utilities
         /// <param name="seed">Optional deterministic seed (use to get repeatable data).</param>
         /// <param name="startId">Starting Id value (defaults to 1).</param>
         /// <returns>List of generated orders.</returns>
-        public static IEnumerable<Order> Generate(int count, int? seed = null, int startId = 1)
+        public static IEnumerable<Order> Generate(int count, int? seed = null, int startId = 0)
         {
             if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
             if (startId < 0) throw new ArgumentOutOfRangeException(nameof(startId));
+
+            if (startId == 0)
+            {
+                startId = _nextId;
+            }
 
             var faker = new Faker<Order>("en")
                 .StrictMode(true)
@@ -32,7 +39,10 @@ namespace CommonLib.Utilities
                 Randomizer.Seed = new Random(seed.Value);
             }
 
-            return faker.Generate(count);
+            var orders = faker.Generate(count);
+            _nextId=orders.Max(o => o.Id) + 1; // Update the next Id for future calls
+            
+            return orders;
         }
     }
 }

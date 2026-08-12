@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Text.Json;
+using UILib.Utilities;
 
 // Create a builder for the host application
 var builder = Host.CreateApplicationBuilder(args);
@@ -46,6 +47,8 @@ if (string.IsNullOrWhiteSpace(subscriptionName))
     Console.ResetColor();
 }
 
+ConsoleUtility.WriteApplicationBanner("Logistic Module", ConsoleColor.Cyan);
+
 await using var client = new ServiceBusClient(serviceBusConnectionString);
 
 var processor = client.CreateProcessor(topicName, subscriptionName,
@@ -59,13 +62,14 @@ var processor = client.CreateProcessor(topicName, subscriptionName,
 processor.ProcessMessageAsync += ProcessMessageHandler;
 processor.ProcessErrorAsync += ProcessErrorHandler;
 
-Console.WriteLine("Starting Service Bus topic subscription processor...");
+ConsoleUtility.WriteLine("Starting Service Bus topic subscription processor...",ConsoleColor.Cyan);
+ConsoleUtility.WriteLine();
 await processor.StartProcessingAsync();
 
-Console.WriteLine("Listening for messages. Press <Enter> to exit.");
+ConsoleUtility.WriteLine("Listening for messages. Press <Enter> to exit.", ConsoleColor.Cyan);
 Console.ReadLine();
 
-Console.WriteLine("Stopping processor...");
+ConsoleUtility.WriteLine("Stopping processor...", ConsoleColor.Cyan);
 await processor.StopProcessingAsync();
 await processor.DisposeAsync();
 
@@ -81,33 +85,26 @@ static async Task ProcessMessageHandler(ProcessMessageEventArgs args)
 
         if (order is not null)
         {
-            Console.WriteLine($"[Message Received] Order : ");
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"{order}");
-            Console.ResetColor();
+            ConsoleUtility.WriteLine($"[Message Received] Order : ", ConsoleColor.White);
+            ConsoleUtility.WriteLine($"\t{order}", ConsoleColor.Green);
         }
         else
         {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("[Message Received] Payload could not be deserialized to Order");
-            Console.ResetColor();
+            ConsoleUtility.WriteLine("[Message Received] Payload could not be deserialized to Order", ConsoleColor.Yellow);
         }
 
         await args.CompleteMessageAsync(args.Message);
     }
     catch (Exception ex)
     {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"Message handling failed: {ex.Message}");
-        Console.ResetColor();
-        await args.AbandonMessageAsync(args.Message);
+        ConsoleUtility.WriteLine($"Message handling failed: {ex.Message}", ConsoleColor.Red);
+        await args.CompleteMessageAsync(args.Message);
+        //await args.AbandonMessageAsync(args.Message);
     }
 }
 
 static Task ProcessErrorHandler(ProcessErrorEventArgs args)
 {
-    Console.ForegroundColor = ConsoleColor.Red;
-    Console.WriteLine($"[Processor Error] EntityPath={args.EntityPath} Source={args.ErrorSource} Exception={args.Exception.Message}");
-    Console.ResetColor();
+    ConsoleUtility.WriteLine($"[Processor Error] EntityPath={args.EntityPath} Source={args.ErrorSource} Exception={args.Exception.Message}", ConsoleColor.Red);
     return Task.CompletedTask;
 }
