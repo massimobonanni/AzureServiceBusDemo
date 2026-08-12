@@ -5,3 +5,45 @@ infra:
   provider: bicep
   path: ./infra
   module: main
+hooks:
+  postprovision:
+    windows:
+      shell: pwsh
+      run: |
+        $outputNames = @(
+          'SERVICEBUS_TOPIC_CONNECTION_STRING'
+          'SERVICEBUS_LOGISTIC_SUBSCRIPTION_CONNECTION_STRING'
+          'SERVICEBUS_FINANCE_SUBSCRIPTION_CONNECTION_STRING'
+        )
+
+        Write-Host 'Service Bus connection strings:'
+        foreach ($outputName in $outputNames) {
+          $outputValue = azd env get-value $outputName
+          if ($LASTEXITCODE -ne 0) {
+            throw "Unable to read azd environment value '$outputName'."
+          }
+
+          Write-Host "${outputName}=${outputValue}"
+        }
+      interactive: false
+      continueOnError: false
+    posix:
+      shell: sh
+      run: |
+        set -eu
+
+        output_names='SERVICEBUS_TOPIC_CONNECTION_STRING
+        SERVICEBUS_LOGISTIC_SUBSCRIPTION_CONNECTION_STRING
+        SERVICEBUS_FINANCE_SUBSCRIPTION_CONNECTION_STRING'
+
+        printf '%s\n' 'Service Bus connection strings:'
+        for output_name in $output_names; do
+          if ! output_value="$(azd env get-value "$output_name")"; then
+            printf "Unable to read azd environment value '%s'.\n" "$output_name" >&2
+            exit 1
+          fi
+
+          printf '%s=%s\n' "$output_name" "$output_value"
+        done
+      interactive: false
+      continueOnError: false

@@ -7,12 +7,9 @@ param environmentName string
 @description('Primary Azure region for this deployment.')
 param location string
 
-@description('Name of the resource group that owns the application resources.')
-@minLength(1)
-param resourceGroupName string
-
-var resourceToken = uniqueString(subscription().id, resourceGroupName, environmentName)
+var resourceToken = uniqueString(subscription().id, environmentName)
 var abbreviations = loadJsonContent('abbreviations.json')
+var resourceGroupName = take('${environmentName}-${abbreviations.resourceGroup}', 50)
 var serviceBusName = take('${abbreviations.serviceBusNamespace}-${resourceToken}', 50)
 
 resource deploymentResourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
@@ -33,9 +30,6 @@ output SERVICEBUS_FULLYQUALIFIEDNAMESPACE string = serviceBus.outputs.serviceBus
 output SERVICEBUS_TOPICNAME string = serviceBus.outputs.serviceBusTopicName
 output SERVICEBUS_LOGISTICSUBSCRIPTIONNAME string = serviceBus.outputs.logisticSubscriptionName
 output SERVICEBUS_FINANCESUBSCRIPTIONNAME string = serviceBus.outputs.financeSubscriptionName
-@secure()
 output SERVICEBUS_TOPIC_CONNECTION_STRING string = serviceBus.outputs.serviceBusTopicConnectionString
-@secure()
 output SERVICEBUS_LOGISTIC_SUBSCRIPTION_CONNECTION_STRING string = serviceBus.outputs.logisticSubscriptionConnectionString
-@secure()
 output SERVICEBUS_FINANCE_SUBSCRIPTION_CONNECTION_STRING string = serviceBus.outputs.financeSubscriptionConnectionString

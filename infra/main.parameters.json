@@ -7,9 +7,6 @@
     },
     "location": {
       "value": "${AZURE_LOCATION}"
-    },
-    "resourceGroupName": {
-      "value": "${AZURE_RESOURCE_GROUP}"
     }
   }
 }

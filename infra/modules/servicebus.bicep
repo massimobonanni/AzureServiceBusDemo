@@ -49,9 +49,6 @@ output serviceBusFullyQualifiedNamespace string = '${serviceBusNamespace.name}.s
 output serviceBusTopicName string = ordersTopic.name
 output logisticSubscriptionName string = logisticSubscription.name
 output financeSubscriptionName string = financeSubscription.name
-@secure()
 output serviceBusTopicConnectionString string = topicPublisherPolicy.listKeys().primaryConnectionString
-@secure()
-output logisticSubscriptionConnectionString string = replace(topicReceiverPolicy.listKeys().primaryConnectionString, 'EntityPath=OrdersTopic', 'EntityPath=OrdersTopic/LogisticSubscription')
-@secure()
-output financeSubscriptionConnectionString string = replace(topicReceiverPolicy.listKeys().primaryConnectionString, 'EntityPath=OrdersTopic', 'EntityPath=OrdersTopic/FinanceSubscription')
+output logisticSubscriptionConnectionString string = topicReceiverPolicy.listKeys().primaryConnectionString
+output financeSubscriptionConnectionString string =topicReceiverPolicy.listKeys().primaryConnectionString

@@ -28,12 +28,12 @@ while (true)
 {
     Console.Write("Enter the number of orders to generate: ");
     var input = Console.ReadLine();
-    
+
     if (int.TryParse(input, out numberOfOrders) && numberOfOrders > 0)
     {
         break;
     }
-    
+
     Console.WriteLine("Please enter a valid positive number.");
 }
 
@@ -48,10 +48,11 @@ Console.WriteLine($"Sending {orders.Count()} orders to '{topicName}'...");
 foreach (var order in orders)
 {
     Console.WriteLine($"\t Sending {order}");
-    var message = new ServiceBusMessage(BinaryData.FromObjectAsJson(order, new JsonSerializerOptions
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    }))
+    var message = new ServiceBusMessage(
+        BinaryData.FromObjectAsJson(order, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        }))
     {
         MessageId = Guid.NewGuid().ToString(),
         Subject = "NewOrder"
@@ -61,7 +62,7 @@ foreach (var order in orders)
     message.ApplicationProperties["Sender"] = "OrderGeneratorApp";
 
     await sender.SendMessageAsync(message);
-    
+
     await Task.Delay(1000);
 }
 
