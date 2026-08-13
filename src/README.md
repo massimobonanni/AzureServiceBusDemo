@@ -1,7 +1,7 @@
 # Source projects
 
-The solution contains one shared library, a console publisher, a console
-subscriber, and an Azure Functions subscriber.
+The solution contains one shared domain library, a reusable UI helper library, a
+console publisher, a console subscriber, and an Azure Functions subscriber.
 
 ## Project structure
 
@@ -9,6 +9,7 @@ subscriber, and an Azure Functions subscriber.
 flowchart LR
     subgraph Projects["src projects"]
         CommonLib["CommonLib<br/>Order model and test-data utilities"]
+        UILib["UILib<br/>Shared console UI helpers"]
         OrderGenerator["OrderGenerator<br/>Console publisher"]
         Logistic["Logistic<br/>Console subscriber"]
         Finance["Finance<br/>Azure Functions subscriber"]
@@ -23,6 +24,10 @@ flowchart LR
     OrderGenerator -. references .-> CommonLib
     Logistic -. references .-> CommonLib
     Finance -. references .-> CommonLib
+    OrderGenerator -. references .-> UILib
+    Logistic -. references .-> UILib
+    UILib -. provides .-> OrderGenerator
+    UILib -. provides .-> Logistic
     OrderGenerator -- publishes orders --> Topic
     Topic --> LogisticSubscription
     Topic --> FinanceSubscription
@@ -33,6 +38,7 @@ flowchart LR
 | Project | Purpose |
 | --- | --- |
 | `CommonLib` | Contains the shared `Order` entity and order generator utility. |
+| `UILib` | Provides reusable console UI helpers such as banners, messages, and loading indicators for the console apps. |
 | `OrderGenerator` | Creates sample orders and publishes them to `OrdersTopic`. |
 | `Logistic` | Receives orders from `LogisticSubscription`. |
 | `Finance` | Uses an Azure Functions Service Bus trigger to process `FinanceSubscription`. |
