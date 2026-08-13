@@ -54,6 +54,8 @@ await using var client = new ServiceBusClient(serviceBusConnectionString);
 var processor = client.CreateProcessor(topicName, subscriptionName,
         new ServiceBusProcessorOptions
         {
+            Identifier = "LogisticProcessor",
+            ReceiveMode = ServiceBusReceiveMode.PeekLock,
             AutoCompleteMessages = false,
             MaxConcurrentCalls = 1
         });
